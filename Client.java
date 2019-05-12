@@ -1,15 +1,29 @@
+package clientServer;
 import java.net.*;
 import java.io.*;
 import java.util.Scanner;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+
+import java.security.InvalidKeyException;
+//import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
 
 public class Client{
 
     Socket s;
     PrintWriter pr;
+    GenerateRSAKeys clientside;
+    PublicKey clientkey;
+    
 
-    public static void main(String[] args) throws IOException{
+    public static void main(String[] args) throws IOException, InvalidKeyException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
         try{
         Client client = new Client();
         client.run();
@@ -20,18 +34,33 @@ public class Client{
         }
 
     }
-    public void run() throws NoSuchAlgorithmException{
+    public void run() throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
         try{
             Scanner scan = new Scanner(System.in);
 
             s = new Socket("localhost",4999);
             pr = new PrintWriter(s.getOutputStream());
-
-            while(s.isConnected()){
-            System.out.println("Enter a message:");
-            String msg = sha1(scan.nextLine());         // hashing input from user
-            pr.println(msg);
-            pr.flush();
+            
+            /*BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
+        	String str = br.readLine();
+            System.out.println("Server: " + str);*/
+            
+            while(s.isConnected()){        	
+                
+	            System.out.println("Enter a message:");
+	            String original = scan.nextLine();
+	            String hashedMsg = sha1(original);         // hashing input from user
+	            
+	            System.out.println("Hashing current message...");
+	            System.out.println(original + " = " + hashedMsg);
+	            System.out.println("Encrypting the hash...");
+	            
+	            byte[] encryptedHash = this.rsaEncryption(hashedMsg.getBytes()); // encrypting the hash
+	            //need to append encrypted hash to actual message then zip it.
+	            //System.out.println(encryptedHash.toString());
+	            pr.println(encryptedHash.toString());
+	            System.out.println("Encrypted hash sent to server");
+	            pr.flush();
             }
             s.close();
             scan.close();
@@ -51,5 +80,13 @@ public class Client{
         }
          
         return sb.toString();
+    }
+    
+    public byte[] rsaEncryption(byte[] data) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    	PublicKey pubkey = GenerateRSAKeys.readKeyFromFile("Pubkey.txt");	//public key obtained from file that server created
+    	Cipher cipher = Cipher.getInstance("RSA");
+    	cipher.init(Cipher.ENCRYPT_MODE, pubkey);
+    	byte[] cipherData = cipher.doFinal(data);
+    	return cipherData;    	
     }
 }
