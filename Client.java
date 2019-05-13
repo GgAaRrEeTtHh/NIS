@@ -2,6 +2,8 @@ package clientServer;
 import java.net.*;
 import java.io.*;
 import java.util.Scanner;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -57,9 +59,12 @@ public class Client{
 	            
 	            byte[] encryptedHash = this.rsaEncryption(hashedMsg.getBytes()); // encrypting the hash
 	            //need to append encrypted hash to actual message then zip it.
-	            //System.out.println(encryptedHash.toString());
-	            pr.println(encryptedHash.toString());
-	            System.out.println("Encrypted hash sent to server");
+	            String messageAndHash = original+"+"+encryptedHash.toString(); // concatenating encrypted hash to the original message.
+	            
+	            this.SaveToZip("ClientMessage.txt", messageAndHash); // zipped client message
+	            
+	            pr.println(messageAndHash);	// in the end this should send the encrypted zip file to the server
+	            //System.out.println("Encrypted hash sent to server");
 	            pr.flush();
             }
             s.close();
@@ -88,5 +93,22 @@ public class Client{
     	cipher.init(Cipher.ENCRYPT_MODE, pubkey);
     	byte[] cipherData = cipher.doFinal(data);
     	return cipherData;    	
+    }
+    
+    // used to save the final message as a zip file
+    public void SaveToZip(String filename, String message) throws IOException {
+    	PrintWriter pr = new PrintWriter(filename);
+    	pr.println(message);
+    	pr.close();
+    	
+    	File f = new File("ZippedClientMessage.zip");
+    	ZipOutputStream out =  new ZipOutputStream(new FileOutputStream(f));
+    	ZipEntry e = new ZipEntry(filename);
+    	out.putNextEntry(e);
+    	
+    	byte[] messageBytes = message.getBytes();
+    	out.write(messageBytes, 0, messageBytes.length);
+    	out.closeEntry();
+    	out.close();
     }
 }

@@ -39,7 +39,7 @@ public class Server {
                 BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
             
                 String str = br.readLine();
-                System.out.println("Encrypted message: " + str);
+                System.out.println("Message + encrypted hash from client: " + str);
 
                 if(str.equals("")){
                     break;
