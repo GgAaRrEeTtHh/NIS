@@ -30,9 +30,9 @@ public class Server {
                 System.out.println("Client connected");	
                 
                 this.CreateKeys();	// Create private and public keys
-                System.out.println("Public-Private key pair created");
-                keygen.getKeySpec("Pubkey.txt",this.pub);	// saves public key to a file called pubkey
-                System.out.println("Public key saved to file Pubkey.txt");
+                System.out.println("Public-Private key pair created for server");
+               // keygen.getKeySpec("Pubkey.txt",this.pub);	// saves public key to a file called pubkey
+                System.out.println("Server Public key saved to file PubkeyServer.txt");
                 
                 
                 while(s.isConnected()){
@@ -53,12 +53,13 @@ public class Server {
     }
     
     // Keys are created and then saved onto the server
-    public void CreateKeys() throws NoSuchAlgorithmException {
+    public void CreateKeys() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
     	this.keygen = new GenerateRSAKeys(2);	// creates a public and a private key
     	
     	Key[] keyring = new Key[2];			// position 0 has public key, position 1 has private key
     	keyring = keygen.KeyPairGen(2048);
     	this.pub = keyring[0];
+        this.keygen.getKeySpec("PubkeyServer.txt",this.pub);	// saves public key to a file called pubkey
     	this.priv = keyring[1];
     }
     
