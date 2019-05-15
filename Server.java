@@ -35,21 +35,31 @@ public class Server {
         server.run();
     }
 
-    public void run() throws NoSuchAlgorithmException, Exception,  InvalidKeySpecException{
+    public void run() throws NoSuchAlgorithmException, Exception,  InvalidKeySpecException
+    {
         
         try{
-            ss = new ServerSocket(4999);
+            ss = new ServerSocket(5999);
             
                 System.out.println("Waiting for client");
                 s = ss.accept();	// Accept client connection
                 System.out.println("Client connected");	
                 
-                while(s.isConnected()){
-                
-                  BufferedInputStream bs = new BufferedInputStream(s.getInputStream());
-                  byte[] byteArray = new byte[1024];
-                  int byt = bs.read(byteArray);
-                
+                while(s.isConnected())
+                {
+                            	
+                	BufferedInputStream bs = new BufferedInputStream(s.getInputStream());
+                                 
+	                byte[] byteArray = new byte[1024];
+	                int byt = bs.read(byteArray);
+	                
+	                System.out.println("Output from client");
+	                System.out.println(byt);
+                  
+                 
+                 // Commented this because it breaks the program
+                 // Probably due to wrong order of decryption
+                  /*
                   String messageAndHash = new String( decryptAndUnzip ( byteArray, byt ), "UTF8"); // this returns a byte [] from gareth
                   
                   System.out.println(" Decrypting Message and Hash...  " +  messageAndHash);
@@ -65,13 +75,15 @@ public class Server {
                   else {
                      System.out.println(" Decrypted Message hash and Hash are NOT EQUAL  ");
                      System.out.println(sha1(message) +" and " + hash);
-                  } 
+                  } */
              }      
                 
         }
-        catch(IOException e){
+        catch(IOException e)
+        {
             e.printStackTrace();
         }
+        s.close();
     }
     
     /**
