@@ -95,9 +95,10 @@ public class Client
 	            System.out.println("Session key wrapped with public key of server");
 	           
 	            // send the byte arrays to the server
-	            pr.println(encryptedZip.toString() +" :seperator: " +encryptedSession.toString());	// in the end this should send the encrypted zip file to the server
+	            pr.println(encryptedZip.toString() +" :seperator: " +encryptedSession.toString());
 	            
-	            System.out.println("Message and signedHash sent to server");
+	            System.out.println("encrypted zip file and encrypted session key sent to server");
+	            System.out.println(encryptedZip.toString() +" :seperator: " +encryptedSession.toString());
 	            pr.flush();
             }
             s.close();

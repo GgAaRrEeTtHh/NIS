@@ -33,6 +33,7 @@ public class SessionKeyGenerator
 		return secretKey;
 	}
 	
+	// saving the session key locally for the client
 	public void saveToFile(String filename) throws Exception
 	{
 		FileOutputStream f = new FileOutputStream(new File(filename));

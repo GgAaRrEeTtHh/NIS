@@ -47,18 +47,23 @@ public class Server {
                 
                 while(s.isConnected())
                 {
-                            	
+                    // The string received from client encompasses a separator
+                	// denoted by ":separator:", which you can use to split
+                	// the string into two byte arrays.
+                	// I avoided changing the sever code. But you will need to change it
+                	// accordingly to be able to use the input from the client side
+                	
                 	BufferedInputStream bs = new BufferedInputStream(s.getInputStream());
                                  
 	                byte[] byteArray = new byte[1024];
 	                int byt = bs.read(byteArray);
 	                
-	                System.out.println("Output from client");
+	                System.out.println("Testing: output from client");
 	                System.out.println(byt);
                   
                  
-                 // Commented this because it breaks the program
-                 // Probably due to wrong order of decryption
+                 /* Commented lines below because they breaks the program  */
+                 
                   /*
                   String messageAndHash = new String( decryptAndUnzip ( byteArray, byt ), "UTF8"); // this returns a byte [] from gareth
                   
