@@ -47,11 +47,10 @@ public class Server {
                 
                 while(s.isConnected())
                 {
-                    // The string received from client encompasses a separator
+                    	// The string received from client encompasses a separator
                 	// denoted by ":separator:", which you can use to split
                 	// the string into two byte arrays.
-                	// I avoided changing the sever code. But you will need to change it
-                	// accordingly to be able to use the input from the client side
+			// I avoided changing the server code. You can take it from here...
                 	
                 	BufferedInputStream bs = new BufferedInputStream(s.getInputStream());
                                  
