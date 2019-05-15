@@ -1,6 +1,7 @@
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.io.*;
+import java.util.*;
 import java.util.Scanner;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -28,78 +29,70 @@ public class Client
     SessionKeyGenerator sessionKeyGenerator;
     SecretKey sessionKey;
     PublicKey serverPubKey;
-    PublicKey clientPubKey;    // clients public key
-    PrivateKey clientPrivKey;  // clients private key
+    PublicKey clientPubKey;                                           // clients public key
+    PrivateKey clientPrivKey;                                         // clients private key
     
+    public Client() throws Exception {
+    
+      this.CreateKeys();   // creating public and private keys for client
+      System.out.println("Public-Private key pair created for client");
+
+    }
 
     public static void main(String[] args) throws Exception
     {
-        try
-        {
+        try{
             Client client = new Client();
             client.run();
-
         }
-        catch(NoSuchAlgorithmException e)
-        {
+        catch(NoSuchAlgorithmException e){
             e.printStackTrace();
         }
 
     }
     public void run() throws Exception
     {
-        try
-        {
+        try{
+        
             Scanner scan = new Scanner(System.in);
-
-            s = new Socket("localhost",5999);
-            pr = new PrintWriter(s.getOutputStream());
-          
-            this.CreateKeys();   // creating public and private keys for client
-            System.out.println("Public-Private key pair created for client");
-            
+            s = new Socket("localhost",4999);
+            OutputStream socketOutputStream = s.getOutputStream(); 
+                                 
             while(s.isConnected())
             { 	
 	            System.out.println("Enter a message:");
-	            String original = scan.nextLine();
-	            String hashedMsg = sha1(original);         // hashing input from user
+               byte [] original = (scan.nextLine()).getBytes();
+               byte [] hashedMsg = sha1(new String(original));                                           // hashing input from user
+               
+               System.out.println("Encrypting the hash...");                                             //COMUNICATiNG
+	            hashedMsg = this.rsaSigning(hashedMsg);                                                   // signing the hash
+               original = ( "+sep+" +hashedMsg.length+"+/" + (new String(original) )).getBytes();
+               
+	            System.out.println("Original + hashed: \n\n>>"  );
+	            System.out.println( (new String(original)) + " + " + (new String(hashedMsg)) );
 	            
-	            System.out.println("Original + hashed");
-	            System.out.println(original + " + " + hashedMsg);
+	            byte [] messageAndSignedHash = addTwoArrays (hashedMsg, original) ;                       // concatenating encrypted hash to the original message.
 	            
-                System.out.println("Encrypting the hash...");
-	            byte[] signedHash = this.rsaSigning(hashedMsg.getBytes()); // signing the hash
-	           
-	            System.out.println("Concatenating original message with encrypted hash (Separated by a \"+\")...");
-	            String messageAndSignedHash = original+"+"+signedHash.toString(); // concatenating encrypted hash to the original message.
-	            
-
-                System.out.print("Original message and signed hash: ");
-                System.out.println(messageAndSignedHash);
-	            this.SaveToZip("ClientMessage.txt", messageAndSignedHash); // zipped client message
-
-
+	            this.SaveToZip("ClientMessage.txt", Base64.getEncoder().encodeToString(messageAndSignedHash));                    // zipped client message
+              
 	            sessionKeyGenerator = new SessionKeyGenerator();
 	            sessionKey = sessionKeyGenerator.getSessionKey();
-
-	       
+               System.out.println("Session key in base64: \n\n>>" + Base64.getEncoder().encodeToString(sessionKey.getEncoded()));
+               
 	            // encrypt zip file with session key
-	            byte[] encryptedZip = sessionEncrypt("ZippedClientMessage.zip");
-                
-	           
-	            // get public key of server
+	            byte [] encryptedZip = sessionEncrypt("ZippedClientMessage.zip" , messageAndSignedHash );
+               System.out.println("encrypted zip : \n\n>>" + Base64.getEncoder().encodeToString(encryptedZip) );
+               
+	            // wrap sesssion key with public key of server
 	            serverPubKey = GenerateRSAKeys.readKeyFromFile("PubkeyServer.txt");
-	            
-	            // wrap session key with public key of server
 	            byte[] encryptedSession = wrapKey(serverPubKey, sessionKey);
-	            System.out.println("Session key wrapped with public key of server");
-	           
+               System.out.println("Encrypted  key : \n\n>>" + Base64.getEncoder().encodeToString(encryptedSession));
+               
 	            // send the byte arrays to the server
-	            pr.println(encryptedZip.toString() +" :seperator: " +encryptedSession.toString());
+               socketOutputStream.write(encryptedSession);
+               socketOutputStream.write(encryptedZip);
 	            
 	            System.out.println("encrypted zip file and encrypted session key sent to server");
-	            System.out.println(encryptedZip.toString() +" :seperator: " +encryptedSession.toString());
-	            pr.flush();
             }
             s.close();
             scan.close();
@@ -110,34 +103,51 @@ public class Client
         }
     }
 
-    // This method reduces the message to a single hashed value for digital signature
-    static String sha1(String input) throws NoSuchAlgorithmException 
+    /**
+    *
+    * This method reduces the message to a single hashed value for digital signature
+    *
+    **/
+    static byte [] sha1(String input) throws NoSuchAlgorithmException 
     {
         MessageDigest mDigest = MessageDigest.getInstance("SHA1");
-        byte[] result = mDigest.digest(input.getBytes());
-        StringBuffer sb = new StringBuffer();
-        for (int i = 0; i < result.length; i++) 
-        {
-            sb.append(Integer.toString((result[i] & 0xff) + 0x100, 16).substring(1));
-        }
-  
-        return sb.toString();
+        return  mDigest.digest(input.getBytes());
     }
-
-    public byte[] sessionEncrypt(String filename) throws Exception
+    
+    /**
+    *
+    * This method adds two byte []  objects
+    *
+    **/
+    public byte [] addTwoArrays( byte [] A, byte [] B ) {
+    
+         byte[] combined = new byte[A.length + B.length];
+         System.arraycopy(A,0,combined,0         ,A.length);
+         System.arraycopy(B,0,combined,A.length,B.length);
+         
+         return combined;
+    }
+    
+    /**
+    *
+    * Encrypt zipped file with session key
+    *
+    **/
+    public byte[] sessionEncrypt(String filename , byte [] testByte) throws Exception
     {
-    		File inputFile = new File(filename);
+    		   File inputFile = new File(filename);
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.ENCRYPT_MODE, sessionKey);
-             
+            
             FileInputStream inputStream = new FileInputStream(inputFile);
             byte[] inputBytes = new byte[(int) inputFile.length()];
             inputStream.read(inputBytes);
              
-            byte[] outputBytes = cipher.doFinal(inputBytes);
-             
+            byte[] outputBytes = cipher.doFinal(testByte);
+            
     		return outputBytes;         
     }
+
 
     public byte[] rsaSigning(byte[] data) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException 
     {
@@ -150,10 +160,10 @@ public class Client
     public static byte[] wrapKey(PublicKey pubKey, SecretKey symKey) throws Exception
     {
         
-    	final Cipher cipher = Cipher.getInstance("RSA");//"RSA/ECB/OAEPWithSHA1AndMGF1Padding");
-        cipher.init(Cipher.WRAP_MODE, pubKey);
-        final byte[] wrapped = cipher.wrap(symKey);
-        return wrapped;
+    	   final Cipher cipher = Cipher.getInstance("RSA");//"RSA/ECB/OAEPWithSHA1AndMGF1Padding");
+         cipher.init(Cipher.ENCRYPT_MODE, pubKey);
+         final byte[] wrapped = cipher.doFinal(symKey.getEncoded());
+         return wrapped;
     }
     
     // used to save the final message as a zip file
@@ -174,12 +184,16 @@ public class Client
     	out.close();
     }
 
-     // Keys are created and then saved onto the client. Public key is made available to client and server
+     /**
+     *
+     * Keys are created and then saved onto the client. Public key is made available to client and server
+     *
+     **/
      public void CreateKeys() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException 
      {
-    	this.clientside = new GenerateRSAKeys(2);	// creates a public and a private key
+    	this.clientside = new GenerateRSAKeys(2);	                           // creates a public and a private key
     	
-    	Key[] keyring = new Key[2];			// position 0 has public key, position 1 has private key
+    	Key[] keyring = new Key[2];			                                 // position 0 has public key, position 1 has private key
     	keyring = clientside.KeyPairGen(2048);
     	this.clientPubKey = (PublicKey) keyring[0];
         this.clientside.getKeySpec("PubkeyClient.txt",this.clientPubKey);	// saves public key to a file called pubkey

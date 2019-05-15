@@ -10,23 +10,17 @@ import java.security.SecureRandom;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils.IO;
+//import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils.IO;
 
 public class SessionKeyGenerator 
 {
 	private SecretKey secretKey;
 	
 	public SessionKeyGenerator() throws Exception
-	{
-		KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-		
-		SecureRandom secureRandom = new SecureRandom();
-		int keyBitSize = 128;
-
-		keyGenerator.init(keyBitSize, secureRandom);
-		
-		secretKey = keyGenerator.generateKey();
-	}
+	{		
+		KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+      keyGen.init(256);
+      secretKey = keyGen.generateKey();	}
 	
 	public SecretKey getSessionKey()
 	{

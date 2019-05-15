@@ -35,59 +35,52 @@ public class Server {
         server.run();
     }
 
-    public void run() throws NoSuchAlgorithmException, Exception,  InvalidKeySpecException
-    {
+    public void run() throws NoSuchAlgorithmException, Exception,  InvalidKeySpecException{
         
         try{
-            ss = new ServerSocket(5999);
-            
+                ss = new ServerSocket(4999);
                 System.out.println("Waiting for client");
-                s = ss.accept();	// Accept client connection
+                s = ss.accept();
                 System.out.println("Client connected");	
                 
-                while(s.isConnected())
-                {
-                    	// The string received from client encompasses a separator
-                	// denoted by ":separator:", which you can use to split
-                	// the string into two byte arrays.
-			// I avoided changing the server code. You can take it from here...
-                	
-                	BufferedInputStream bs = new BufferedInputStream(s.getInputStream());
-                                 
-	                byte[] byteArray = new byte[1024];
-	                int byt = bs.read(byteArray);
-	                
-	                System.out.println("Testing: output from client");
-	                System.out.println(byt);
+                while(s.isConnected()){
+                
+                  BufferedInputStream bs = new BufferedInputStream(s.getInputStream());
+                  byte[] byteArray = new byte[1024];
+                  int byt = bs.read(byteArray);
                   
-                 
-                 /* Commented lines below because they breaks the program  */
-                 
-                  /*
-                  String messageAndHash = new String( decryptAndUnzip ( byteArray, byt ), "UTF8"); // this returns a byte [] from gareth
+                  byteArray = decryptAndUnzip ( byteArray, byt );
                   
-                  System.out.println(" Decrypting Message and Hash...  " +  messageAndHash);
+                  ///COMMUMICATE/// 
+                  System.out.println(" ******************************************************************* ");
+                  System.out.println(" Decrypting Zip...\n\n  " +  (new String(byteArray , "UTF-8")) );
+                  /////////////////
+                  
                   //check if message hash and match
-                  String hash = decrypt ( GenerateRSAKeys.readKeyFromFile("PubkeyClient.txt"), messageAndHash.substring(messageAndHash.indexOf('+')+1).getBytes() , 0).toString();
-                  String message = messageAndHash.substring(0, messageAndHash.indexOf('+'));
+                  int keyLen = getKeyLen( byteArray );
+                  String hash = new String (decryptRSA ( GenerateRSAKeys.readKeyFromFile("PubkeyClient.txt"), (Arrays.copyOfRange(byteArray,0, keyLen))));
+                  String message = new String (Arrays.copyOfRange(byteArray,keyLen+1 ,byteArray.length ) );
+                  message = message.substring(message.indexOf("+/")+2);
                   
-                  if ( hash.equals(sha1(message))){
+                  ///COMMUMICATE///
+                  System.out.println(" message from client  \n\n>>"+ message ) ;
+                  /////////////////
+                  
+                  if ( hash.equals(new String(sha1(message))) ){
                      System.out.println(" Decrypted Message hash and Hash are EQUAL  ");
-                     System.out.println(sha1(message) +" and " + hash);
+                     System.out.println(new String(sha1(message)) +" and " + hash);
 
                   }
                   else {
                      System.out.println(" Decrypted Message hash and Hash are NOT EQUAL  ");
-                     System.out.println(sha1(message) +" and " + hash);
-                  } */
+                     System.out.println(new String(sha1(message)) +" and " + hash);
+                  } 
              }      
                 
         }
-        catch(IOException e)
-        {
+        catch(IOException e){
             e.printStackTrace();
         }
-        s.close();
     }
     
     /**
@@ -105,41 +98,41 @@ public class Server {
     public byte [] decryptAndUnzip (byte [] byteArray, int len) throws Exception{
       
             //deccrypt the Ks with public(pub) key
-            byte [] byteArrayKey = Arrays.copyOfRange(byteArray, 0,32);                                                 //extract key from recieved data
-            System.out.println("\n Key data: >>" + new String(byteArrayKey, "UTF8") );
-            byteArrayKey = decrypt ( privateKey , byteArrayKey , 0 ) ;                                                   //decrypt key with RSA
+            byte [] byteArrayKey =  Arrays.copyOfRange(byteArray,0, 256);                                                //extract key from recieved data
+            System.out.println(" Encrypted key Data : \n\n>>" + Base64.getEncoder().encodeToString(byteArrayKey) );
+            byteArrayKey = decryptRSA ( privateKey , byteArrayKey) ;                                                     //decrypt key with RSA
             SecretKey secretKey = new SecretKeySpec(byteArrayKey, 0, byteArrayKey.length, "AES");                        //generate key from the data
-            System.out.println(" Key generated : " + Base64.getEncoder().encodeToString(secretKey.getEncoded()) );
+            System.out.println(" Key generated : \n\n>>" + Base64.getEncoder().encodeToString(secretKey.getEncoded()) );
             
             //use Ks to decrypt the message
-            byte [] byteArrayData = Arrays.copyOfRange(byteArray, 32,len); //extract message
-            System.out.println(" Encrypted message:\n>> " + new String(byteArrayData, "UTF8") );
+            byte [] byteArrayData = Arrays.copyOfRange(byteArray, 256,len);                                              //extract message
+            System.out.println(" Encrypted Zipped Message from client:  \n\n>>" + Base64.getEncoder().encodeToString(byteArrayData) );
              
             //decrypt message with AES 
-            byte[] decryptedBytes = decrypt ( secretKey , byteArrayKey , 1 ) ;                                            //decrypt with AES
+            this.cipher = Cipher.getInstance("AES");
+            this.cipher.init(Cipher.DECRYPT_MODE, secretKey);
+   		   byte[] decryptedBytes = cipher.doFinal(byteArrayData);                                                     //decrypt with AES
           
-            //unziip and print message
-           
-            System.out.println( " decrypted message is:\n >>" + new String(decryptedBytes, "UTF8") );
+            System.out.println( " Decrypted Zipped Message is: \n\n>>" + new String(decryptedBytes, "UTF8") );
+            
+            //unziip
             return decryptedBytes;
     }
     
-    // This method reduces the message to a single hashed value for digital signature
-    static String sha1(String input) throws NoSuchAlgorithmException {
-    
+    /**
+    *
+    * This method reduces the message to a single hashed value for digital signature
+    *
+    **/
+    static byte [] sha1(String input) throws NoSuchAlgorithmException 
+    {
         MessageDigest mDigest = MessageDigest.getInstance("SHA1");
-        byte[] result = mDigest.digest(input.getBytes());
-        StringBuffer sb = new StringBuffer();
-        for (int i = 0; i < result.length; i++) {
-            sb.append(Integer.toString((result[i] & 0xff) + 0x100, 16).substring(1));
-        }
-
-        return sb.toString();
+        return  mDigest.digest(input.getBytes());
     }
     
     /**
      * Method decrypt messages with the Key and specified algorithm
-     * 0 for RSA and 1 for AES.
+     * for RSA
      *
      * @param publicKey uses generated public key.
      * @param message
@@ -149,17 +142,13 @@ public class Server {
      * @throws InvalidKeyException
      * @throws BadPaddingException
      * @throws IllegalBlockSizeException
-     */
+     **/
      
-    public byte [] decrypt (Key key, byte [] message , int n) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, IOException {
+    public byte [] decryptRSA (Key key, byte [] message ) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, IOException {
 
-        if (n==0)
-        this.cipher = Cipher.getInstance(ALGORITHM_RSA);
-        else
-        this.cipher = Cipher.getInstance(ALGORITHM_AES);
-        
-        cipher.init(Cipher.DECRYPT_MODE, key);
-        return  cipher.doFinal(message);
+           this.cipher = Cipher.getInstance(ALGORITHM_RSA);
+           cipher.init(Cipher.DECRYPT_MODE, key);
+           return  cipher.doFinal(message);
     }
     
     /** 
@@ -177,6 +166,22 @@ public class Server {
       this.privateKey = keyring[1];
       
       this.keygen.getKeySpec("PubkeyServer.txt",this.publicKey);    	// saves public key to a file called pubkey
+    }
+    
+    /**
+    *
+    *Get the keylength from the byte [] messsage sent from client
+    *
+    **/
+    
+    public int getKeyLen(byte [] byteMes) {
+      
+      String messageAndHash = new String ( byteMes );
+      messageAndHash = messageAndHash.substring(messageAndHash.indexOf("+sep")+5);
+      System.out.println(" len of key >> " +  messageAndHash);
+      
+      return Integer.parseInt(messageAndHash.substring(0, messageAndHash.indexOf('+')));
+      
     }
     
     

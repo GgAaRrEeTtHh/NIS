@@ -1,27 +1,12 @@
-
-
-//import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-//import java.io.FileNotFoundException;
-//import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-//import java.io.InputStream;
-//import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.math.BigInteger;
-import java.security.Key;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
+import java.security.*;
 import java.security.spec.InvalidKeySpecException;
-//import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 
 public class GenerateRSAKeys{
-	Key[] keyring;
+	
+   Key[] keyring;
 	
 	public GenerateRSAKeys(int Nokeys) {
 		keyring = new Key[Nokeys];
