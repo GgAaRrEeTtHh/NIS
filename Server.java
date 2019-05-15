@@ -49,11 +49,12 @@ public class Server {
                   byte[] byteArray = new byte[1024];
                   int byt = bs.read(byteArray);
                   
-                  byteArray = decryptAndUnzip ( byteArray, byt );
-                  
                   ///COMMUMICATE/// 
                   System.out.println(" ******************************************************************* ");
-                  System.out.println(" Decrypting Zip...\n\n  " +  (new String(byteArray , "UTF-8")) );
+                  
+                  byteArray = decryptAndUnzip ( byteArray, byt );
+                  
+                  System.out.println("\n ****Decrypting Zip...\n\n  " +  (new String(byteArray , "UTF-8")) );
                   /////////////////
                   
                   //check if message hash and match
@@ -63,16 +64,16 @@ public class Server {
                   message = message.substring(message.indexOf("+/")+2);
                   
                   ///COMMUMICATE///
-                  System.out.println(" message from client  \n\n>>"+ message ) ;
+                  System.out.println("\n\n ****message from client  \n>>"+ message ) ;
                   /////////////////
                   
                   if ( hash.equals(new String(sha1(message))) ){
-                     System.out.println(" Decrypted Message hash and Hash are EQUAL  ");
+                     System.out.println(" \n\n****Decrypted Message hash and Hash are EQUAL  ");
                      System.out.println(new String(sha1(message)) +" and " + hash);
 
                   }
                   else {
-                     System.out.println(" Decrypted Message hash and Hash are NOT EQUAL  ");
+                     System.out.println(" \n\n****Decrypted Message hash and Hash are NOT EQUAL  ");
                      System.out.println(new String(sha1(message)) +" and " + hash);
                   } 
              }      
@@ -99,22 +100,20 @@ public class Server {
       
             //deccrypt the Ks with public(pub) key
             byte [] byteArrayKey =  Arrays.copyOfRange(byteArray,0, 256);                                                //extract key from recieved data
-            System.out.println(" Encrypted key Data : \n\n>>" + Base64.getEncoder().encodeToString(byteArrayKey) );
+            System.out.println("\n ****Encrypted key Data : \n>>" + Base64.getEncoder().encodeToString(byteArrayKey) );
             byteArrayKey = decryptRSA ( privateKey , byteArrayKey) ;                                                     //decrypt key with RSA
             SecretKey secretKey = new SecretKeySpec(byteArrayKey, 0, byteArrayKey.length, "AES");                        //generate key from the data
-            System.out.println(" Key generated : \n\n>>" + Base64.getEncoder().encodeToString(secretKey.getEncoded()) );
+            System.out.println(" \n****Key generated : \n>>" + Base64.getEncoder().encodeToString(secretKey.getEncoded()) );
             
             //use Ks to decrypt the message
             byte [] byteArrayData = Arrays.copyOfRange(byteArray, 256,len);                                              //extract message
-            System.out.println(" Encrypted Zipped Message from client:  \n\n>>" + Base64.getEncoder().encodeToString(byteArrayData) );
+            System.out.println(" \n****Encrypted Zipped Message from client:  \n\n>>" + Base64.getEncoder().encodeToString(byteArrayData) );
              
             //decrypt message with AES 
             this.cipher = Cipher.getInstance("AES");
             this.cipher.init(Cipher.DECRYPT_MODE, secretKey);
    		   byte[] decryptedBytes = cipher.doFinal(byteArrayData);                                                     //decrypt with AES
-          
-            System.out.println( " Decrypted Zipped Message is: \n\n>>" + new String(decryptedBytes, "UTF8") );
-            
+                      
             //unziip
             return decryptedBytes;
     }
@@ -178,7 +177,6 @@ public class Server {
       
       String messageAndHash = new String ( byteMes );
       messageAndHash = messageAndHash.substring(messageAndHash.indexOf("+sep")+5);
-      System.out.println(" len of key >> " +  messageAndHash);
       
       return Integer.parseInt(messageAndHash.substring(0, messageAndHash.indexOf('+')));
       

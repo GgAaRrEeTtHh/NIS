@@ -64,11 +64,12 @@ public class Client
                byte [] original = (scan.nextLine()).getBytes();
                byte [] hashedMsg = sha1(new String(original));                                           // hashing input from user
                
-               System.out.println("Encrypting the hash...");                                             //COMUNICATiNG
+               System.out.println("*************************************************");
+               System.out.println("****Encrypting the hash...");                                             //COMUNICATiNG
 	            hashedMsg = this.rsaSigning(hashedMsg);                                                   // signing the hash
                original = ( "+sep+" +hashedMsg.length+"+/" + (new String(original) )).getBytes();
                
-	            System.out.println("Original + hashed: \n\n>>"  );
+	            System.out.println("\n****Original + hashed: \n>>"  );
 	            System.out.println( (new String(original)) + " + " + (new String(hashedMsg)) );
 	            
 	            byte [] messageAndSignedHash = addTwoArrays (hashedMsg, original) ;                       // concatenating encrypted hash to the original message.
@@ -77,22 +78,23 @@ public class Client
               
 	            sessionKeyGenerator = new SessionKeyGenerator();
 	            sessionKey = sessionKeyGenerator.getSessionKey();
-               System.out.println("Session key in base64: \n\n>>" + Base64.getEncoder().encodeToString(sessionKey.getEncoded()));
+               System.out.println("\n****Session key in base64: \n>>" + Base64.getEncoder().encodeToString(sessionKey.getEncoded()));
                
 	            // encrypt zip file with session key
 	            byte [] encryptedZip = sessionEncrypt("ZippedClientMessage.zip" , messageAndSignedHash );
-               System.out.println("encrypted zip : \n\n>>" + Base64.getEncoder().encodeToString(encryptedZip) );
+               System.out.println("\n****encrypted zip : \n\n>>" + Base64.getEncoder().encodeToString(encryptedZip) );
                
 	            // wrap sesssion key with public key of server
 	            serverPubKey = GenerateRSAKeys.readKeyFromFile("PubkeyServer.txt");
 	            byte[] encryptedSession = wrapKey(serverPubKey, sessionKey);
-               System.out.println("Encrypted  key : \n\n>>" + Base64.getEncoder().encodeToString(encryptedSession));
+               System.out.println(\n"****Encrypted  key : \n\n>>" + Base64.getEncoder().encodeToString(encryptedSession));
                
 	            // send the byte arrays to the server
                socketOutputStream.write(encryptedSession);
                socketOutputStream.write(encryptedZip);
 	            
 	            System.out.println("encrypted zip file and encrypted session key sent to server");
+               System.out.println("******************************************\n");
             }
             s.close();
             scan.close();
