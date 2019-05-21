@@ -82,7 +82,7 @@ public class Client
                System.out.println("\n****Session key in base64: \n>>" + Base64.getEncoder().encodeToString(sessionKey.getEncoded()));
                
 	            // encrypt zip file with session key
-	            byte [] encryptedZip = sessionEncrypt("ZippedClientMessage.zip" , messageAndSignedHash );
+	            byte [] encryptedZip = sessionEncrypt( messageAndSignedHash );
                System.out.println("\n****encrypted zip : \n\n>>" + Base64.getEncoder().encodeToString(encryptedZip) );
                
 	            // wrap sesssion key with public key of server
@@ -137,16 +137,10 @@ public class Client
     * Encrypt zipped file with session key
     *
     **/
-    public byte[] sessionEncrypt(String filename , byte [] testByte) throws Exception
+    public byte[] sessionEncrypt( byte [] testByte) throws Exception
     {
-    		   File inputFile = new File(filename);
             Cipher cipher = Cipher.getInstance("AES");
-            cipher.init(Cipher.ENCRYPT_MODE, sessionKey);
-            
-            FileInputStream inputStream = new FileInputStream(inputFile);
-            byte[] inputBytes = new byte[(int) inputFile.length()];
-            inputStream.read(inputBytes);
-             
+            cipher.init(Cipher.ENCRYPT_MODE, sessionKey); 
             byte[] outputBytes = cipher.doFinal(testByte);
             
     		return outputBytes;         
