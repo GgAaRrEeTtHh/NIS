@@ -5,6 +5,8 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.io.*;
 import java.util.*;
+import java.util.zip.Inflater;
+
 
 
 public class Server {
@@ -46,7 +48,7 @@ public class Server {
                 while(s.isConnected()){
                 
                   BufferedInputStream bs = new BufferedInputStream(s.getInputStream());
-                  byte[] byteArray = new byte[1024];
+                  byte[] byteArray = new byte[2048];
                   int byt = bs.read(byteArray);
                   
                   ///COMMUMICATE/// 
@@ -54,26 +56,26 @@ public class Server {
                   
                   byteArray = decryptAndUnzip ( byteArray, byt );
                   
-                  System.out.println("\n ****Decrypting Zip...\n\n  " +  (new String(byteArray , "UTF-8")) );
+                  System.out.println("\n ****Decrypting Zip...\nEncrypted hash and message\n\n  " +  (new String(byteArray , "UTF-8")) );
                   /////////////////
                   
                   //check if message hash and match
                   int keyLen = getKeyLen( byteArray );
                   String hash = new String (decryptRSA ( GenerateRSAKeys.readKeyFromFile("PubkeyClient.txt"), (Arrays.copyOfRange(byteArray,0, keyLen))));
-                  String message = new String (Arrays.copyOfRange(byteArray,keyLen+1 ,byteArray.length ) );
-                  message = message.substring(message.indexOf("+/")+2);
+                  String message = new String (Arrays.copyOfRange(byteArray,keyLen,byteArray.length ) );
+                  //message = message.substring(message.indexOf(" +/")+3);
                   
                   ///COMMUMICATE///
                   System.out.println("\n\n ****message from client  \n>>"+ message ) ;
                   /////////////////
                   
                   if ( hash.equals(new String(sha1(message))) ){
-                     System.out.println(" \n\n****Decrypted Message hash and Hash are EQUAL  ");
+                     System.out.println(" \n\n****Decrypted Message hash and Hash from client are EQUAL  ");
                      System.out.println(new String(sha1(message)) +" and " + hash);
 
                   }
                   else {
-                     System.out.println(" \n\n****Decrypted Message hash and Hash are NOT EQUAL  ");
+                     System.out.println(" \n\n****Decrypted Message hash and Hash from client are NOT EQUAL  ");
                      System.out.println(new String(sha1(message)) +" and " + hash);
                   } 
              }      
@@ -114,8 +116,9 @@ public class Server {
             this.cipher.init(Cipher.DECRYPT_MODE, secretKey);
    		   byte[] decryptedBytes = cipher.doFinal(byteArrayData);                                                     //decrypt with AES
                       
-            //unziip
-            return decryptedBytes;
+            //unziip and return
+            
+            return decompress ( decryptedBytes );
     }
     
     /**
@@ -174,12 +177,37 @@ public class Server {
     **/
     
     public int getKeyLen(byte [] byteMes) {
+
+      return 256;
       
-      String messageAndHash = new String ( byteMes );
-      messageAndHash = messageAndHash.substring(messageAndHash.indexOf("+sep")+5);
-      
-      return Integer.parseInt(messageAndHash.substring(0, messageAndHash.indexOf('+')));
-      
+    }
+    
+    public byte [] decompress ( byte [] bytes ) {
+    
+      try {
+                
+           // Decompress the bytes
+           Inflater decompresser = new Inflater();
+           decompresser.setInput(bytes, 0, bytes.length);
+           byte[] result = new byte[1048];
+           
+           int resultLength =0; 
+           
+           while (!decompresser.finished() ) {
+           
+            resultLength = decompresser.inflate(result);
+            
+           }
+           decompresser.end();
+           
+           return  Arrays.copyOfRange(result, 0,resultLength);
+                       
+       } catch (java.util.zip.DataFormatException ex) {
+           // handle
+           System.out.println( "Unable to decmpress" + ex );
+           return null;
+       }
+           
     }
     
     

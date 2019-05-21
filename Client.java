@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.Scanner;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import java.util.zip.Deflater;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -67,14 +68,14 @@ public class Client
                System.out.println("*************************************************");
                System.out.println("****Encrypting the hash...");                                             //COMUNICATiNG
 	            hashedMsg = this.rsaSigning(hashedMsg);                                                   // signing the hash
-               original = ( "+sep+" +hashedMsg.length+"+/" + (new String(original) )).getBytes();
+               //original = ( "+sep+" +hashedMsg.length+" +/" + (new String(original) )).getBytes();
                
 	            System.out.println("\n****Original + hashed: \n>>"  );
 	            System.out.println( (new String(original)) + " + " + (new String(hashedMsg)) );
 	            
-	            byte [] messageAndSignedHash = addTwoArrays (hashedMsg, original) ;                       // concatenating encrypted hash to the original message.
+               //zip the message and signed hash
+	            byte [] messageAndSignedHash = compress ( addTwoArrays (hashedMsg, original) );                       // concatenating encrypted hash to the original message.
 	            
-	            this.SaveToZip("ClientMessage.txt", Base64.getEncoder().encodeToString(messageAndSignedHash));                    // zipped client message
               
 	            sessionKeyGenerator = new SessionKeyGenerator();
 	            sessionKey = sessionKeyGenerator.getSessionKey();
@@ -87,11 +88,12 @@ public class Client
 	            // wrap sesssion key with public key of server
 	            serverPubKey = GenerateRSAKeys.readKeyFromFile("PubkeyServer.txt");
 	            byte[] encryptedSession = wrapKey(serverPubKey, sessionKey);
-               System.out.println(\n"****Encrypted  key : \n\n>>" + Base64.getEncoder().encodeToString(encryptedSession));
+               System.out.println("\n****Encrypted  key : \n\n>>" + Base64.getEncoder().encodeToString(encryptedSession));
                
 	            // send the byte arrays to the server
-               socketOutputStream.write(encryptedSession);
-               socketOutputStream.write(encryptedZip);
+               socketOutputStream.write(addTwoArrays (encryptedSession , encryptedZip ));
+
+               socketOutputStream.flush();
 	            
 	            System.out.println("encrypted zip file and encrypted session key sent to server");
                System.out.println("******************************************\n");
@@ -167,24 +169,6 @@ public class Client
          final byte[] wrapped = cipher.doFinal(symKey.getEncoded());
          return wrapped;
     }
-    
-    // used to save the final message as a zip file
-    public void SaveToZip(String filename, String message) throws IOException 
-    {
-    	PrintWriter pr = new PrintWriter(filename);
-    	pr.println(message);
-    	pr.close();
-    	
-    	File f = new File("ZippedClientMessage.zip");
-    	ZipOutputStream out =  new ZipOutputStream(new FileOutputStream(f));
-    	ZipEntry e = new ZipEntry(filename);
-    	out.putNextEntry(e);
-    	
-    	byte[] messageBytes = message.getBytes();
-    	out.write(messageBytes, 0, messageBytes.length);
-    	out.closeEntry();
-    	out.close();
-    }
 
      /**
      *
@@ -200,5 +184,44 @@ public class Client
     	this.clientPubKey = (PublicKey) keyring[0];
         this.clientside.getKeySpec("PubkeyClient.txt",this.clientPubKey);	// saves public key to a file called pubkey
     	this.clientPrivKey = (PrivateKey) keyring[1];
+    }
+    
+    /**
+    *
+    * The method compress, takes in a by
+    *
+    *
+    **/
+    public byte [] compress ( byte [] bytes ) 
+    {
+       		 
+		   Deflater deflater = new Deflater();
+		   deflater.setInput(bytes);
+		   deflater.finish();
+		   ByteArrayOutputStream bos = new ByteArrayOutputStream(bytes.length);
+		   
+		   byte[] buffer = new byte[1024];
+		   
+		   while(!deflater.finished())
+		   {		   		 
+		   		 int bytesCompressed = deflater.deflate(buffer);
+		   		 bos.write(buffer,0,bytesCompressed);
+		   }
+		   
+		   try
+		   {
+			   //close the output stream
+			   bos.close();
+		   }
+		   catch(IOException ioe)
+		   {
+		   		System.out.println(ioe);
+		   }
+		   
+		   //get the compressed byte array from output stream
+		   byte[] compressedArray = bos.toByteArray();
+         
+         return compressedArray;
+		   
     }
 }
