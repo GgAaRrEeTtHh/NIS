@@ -33,6 +33,17 @@ public class Client
     PublicKey clientPubKey;                                           // clients public key
     PrivateKey clientPrivKey;                                         // clients private key
     
+    static boolean testMode = false;
+    
+    // constructor used in junit testing
+    public Client(boolean mode) throws Exception
+    {
+    	testMode = mode;
+    	this.CreateKeys();   // creating public and private keys for client
+        System.out.println("Public-Private key pair created for client");
+        System.out.println("Testing Mode");
+    }	
+	
     public Client() throws Exception {
     
       this.CreateKeys();   // creating public and private keys for client
