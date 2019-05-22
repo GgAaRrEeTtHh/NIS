@@ -22,23 +22,11 @@ class ServerTest {
     void setUp() throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
         this.server = new Server();
     }
-
-    @Test
-    void run() {
-    }
-
-    @Test
-    void decryptAndUnzip() {
-    }
-
+    
+    //Test the output of the hashing method
     @Test
     void sha1() throws NoSuchAlgorithmException {
         assertEquals(20, Server.sha1("abc").length);
-    }
-
-    @Test
-    void decryptRSA(){
-
     }
 
     //Tests if file has been created.
@@ -50,9 +38,5 @@ class ServerTest {
 
         String content = new String(Files.readAllBytes(Paths.get("PubkeyServer.txt")));
         assertTrue(content.isEmpty() == false);
-    }
-
-    @Test
-    void getKeyLen() throws Exception {
     }
 }
