@@ -31,6 +31,7 @@ class ClientTest
 		 client = new Client(true);
 	 }
 	 
+	// Test if the public is created when the client is launched
 	 @Test
 	    void createKeys() throws Exception
 	 {
@@ -41,16 +42,18 @@ class ClientTest
 	        assertTrue(content.isEmpty() == false);
 	 }
 	 
+	// Testing the hash function
 	 @Test
 	 void sha1Test() throws Exception
 	 {
 		 String s1 = "abc";
 		 MessageDigest mDigest = MessageDigest.getInstance("SHA1");
 	     byte [] s2  = mDigest.digest(s1.getBytes());
-	     assertTrue( Arrays.equals(s2, Client.sha1(s1)));  //(s2.equals(Client.sha1(s1)));
+	     assertTrue( Arrays.equals(s2, Client.sha1(s1)));  
 		 
 	 }
 	 
+	// Test if the method returns the right output
 	@Test
 	 void addTwoArrays() throws Exception
 	 {
@@ -65,6 +68,7 @@ class ClientTest
          assertTrue( Arrays.equals(combined, client.addTwoArrays(A, B)));
 	 }
 	
+	// Test if the compress method returns the right output
 	@Test 
 	void compressTest()
 	{
